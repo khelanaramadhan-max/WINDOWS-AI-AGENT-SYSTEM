@@ -12,6 +12,9 @@ This is a 3-week FinTech project assignment to build an Intelligent Windows Auto
   - Application Whitelist ensuring only safe programs are launched
   - Requires user approval for potentially destructive actions (e.g., shell commands)
   - Detailed audit log written to `logs/agent.log`
+- **Fault Tolerance & API Resiliency**:
+  - Automatically retries network/API failures with backoff wait times.
+  - LLM self-correction loop catches invalid JSON tool arguments and instructs the model to retry automatically.
 
 ## Prerequisites
 

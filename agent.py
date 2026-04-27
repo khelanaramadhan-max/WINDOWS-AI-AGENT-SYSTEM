@@ -1,6 +1,8 @@
 import os
 import json
 import logging
+import time
+import logging
 from datetime import datetime
 from dotenv import load_dotenv
 from groq import Groq
@@ -288,14 +290,25 @@ def chat_loop():
                 ) as progress:
                     progress.add_task(description="Agent is thinking...", total=None)
                     
-                    # Call LLM
-                    response = client.chat.completions.create(
-                        model="llama-3.3-70b-versatile",  # Using groq's best model
-                        messages=conversation_history,
-                        tools=TOOL_SCHEMAS,
-                        tool_choice="auto",
-                        temperature=0.2
-                    )
+                    # Call LLM with Fault Tolerance (Retry Mechanism)
+                    max_retries = 3
+                    for attempt in range(max_retries):
+                        try:
+                            if attempt > 0:
+                                progress.update(progress.task_ids[0], description=f"Retrying connection... (Attempt {attempt+1}/{max_retries})")
+                            
+                            response = client.chat.completions.create(
+                                model="llama-3.3-70b-versatile",
+                                messages=conversation_history,
+                                tools=TOOL_SCHEMAS,
+                                tool_choice="auto",
+                                temperature=0.2
+                            )
+                            break # Success, exit retry loop
+                        except Exception as e:
+                            if attempt == max_retries - 1:
+                                raise Exception(f"Failed to communicate with LLM after {max_retries} attempts. Error: {str(e)}")
+                            time.sleep(2) # Wait before retrying
                 
                 message = response.choices[0].message
                 
@@ -310,6 +323,22 @@ def chat_loop():
                     for tool_call in message.tool_calls:
                         console.print(f"  [cyan]⚡ Executing Tool:[/cyan] [bold]{tool_call.function.name}[/bold]")
                         
+                        # LLM Error Correction mechanism
+                        try:
+                            # Just testing if JSON parses, actual execution happens in execute_tool_call
+                            if tool_call.function.arguments:
+                                json.loads(tool_call.function.arguments)
+                        except json.JSONDecodeError:
+                            console.print("[yellow]Agent generated invalid JSON. Initiating error correction loop...[/yellow]")
+                            tool_result = "Error: Your previous tool call produced invalid JSON arguments. Please fix the formatting and try again."
+                            conversation_history.append({
+                                "role": "tool",
+                                "tool_call_id": tool_call.id,
+                                "name": tool_call.function.name,
+                                "content": tool_result
+                            })
+                            continue # Skip execution, let the LLM fix it
+                            
                         tool_result = execute_tool_call(tool_call)
                         
                         # Add tool result to conversation history

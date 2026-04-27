@@ -3,13 +3,38 @@ import subprocess
 import os
 import time
 
+import socket
+from datetime import datetime
+
 def get_system_info() -> str:
-    """Returns CPU, RAM, and Disk utilization as a string."""
+    """Returns CPU, RAM, Disk, Network, and Boot utilization as a string."""
     cpu = psutil.cpu_percent(interval=1)
     ram = psutil.virtual_memory()
     disk = psutil.disk_usage('/')
     
-    return f"CPU: {cpu}% | RAM: {ram.percent}% (Used: {ram.used / (1024**3):.2f}GB / Total: {ram.total / (1024**3):.2f}GB) | Disk: {disk.percent}%"
+    # Advanced stats
+    boot_time = datetime.fromtimestamp(psutil.boot_time()).strftime("%Y-%m-%d %H:%M:%S")
+    battery = psutil.sensors_battery()
+    battery_status = f"{battery.percent}% {'(Plugged In)' if battery.power_plugged else '(On Battery)'}" if battery else "No Battery"
+    
+    # Get local IP
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        local_ip = s.getsockname()[0]
+        s.close()
+    except Exception:
+        local_ip = "Unknown"
+    
+    info = (
+        f"CPU: {cpu}%\n"
+        f"RAM: {ram.percent}% (Used: {ram.used / (1024**3):.2f}GB / Total: {ram.total / (1024**3):.2f}GB)\n"
+        f"Disk: {disk.percent}%\n"
+        f"Boot Time: {boot_time}\n"
+        f"Battery: {battery_status}\n"
+        f"Local IP: {local_ip}"
+    )
+    return info
 
 def list_processes(limit: int = 10) -> str:
     """Returns a list of top running processes by CPU usage."""
