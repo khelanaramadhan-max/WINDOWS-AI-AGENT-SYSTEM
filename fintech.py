@@ -40,10 +40,17 @@ def summarize_transactions(path: str = "transactions.csv") -> str:
                 total_spent += amt
                 category_summary[cat] = category_summary.get(cat, 0.0) + amt
         
-        summary = f"Total Spent: ${total_spent:.2f}\n"
-        summary += "Spending by Category:\n"
-        for cat, amt in category_summary.items():
-            summary += f"  - {cat}: ${amt:.2f}\n"
+        summary = f"Total Spent: ${total_spent:.2f}\n\n"
+        summary += "Spending by Category (Visual Chart):\n"
+        
+        # Find max amount for scaling the bar chart
+        max_amt = max(category_summary.values()) if category_summary else 1
+        
+        for cat, amt in sorted(category_summary.items(), key=lambda x: x[1], reverse=True):
+            # Calculate bar length (max 30 characters)
+            bar_length = int((amt / max_amt) * 30)
+            bar = "█" * bar_length
+            summary += f"{cat.ljust(15)} | {bar} ${amt:.2f}\n"
             
         return summary
     except Exception as e:

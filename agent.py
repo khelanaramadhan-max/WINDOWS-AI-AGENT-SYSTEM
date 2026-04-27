@@ -1,25 +1,34 @@
 import os
 import json
 import logging
+from datetime import datetime
 from dotenv import load_dotenv
 from groq import Groq
-from colorama import Fore, Style, init
+
+# Rich UI Imports
+from rich.console import Console
+from rich.panel import Panel
+from rich.markdown import Markdown
+from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.prompt import Prompt
+from rich.text import Text
 
 import tools
 import security
 import fintech
 
-# Initialize colorama
-init(autoreset=True)
+# Initialize Rich Console
+console = Console()
 
 # Load environment variables
 load_dotenv()
 API_KEY = os.getenv("GROQ_API_KEY")
 
 if not API_KEY or API_KEY == "your_groq_api_key_here":
-    print(f"{Fore.RED}Error: GROQ_API_KEY not found in .env file.{Style.RESET_ALL}")
+    console.print(Panel("[bold red]Error:[/bold red] GROQ_API_KEY not found in .env file.", title="Initialization Error", border_style="red"))
     exit(1)
 
+# Initialize Groq Client
 client = Groq(api_key=API_KEY)
 
 # Define the tools available to the LLM
@@ -136,7 +145,7 @@ TOOL_SCHEMAS = [
         "type": "function",
         "function": {
             "name": "summarize_transactions",
-            "description": "Summarizes transactions from a CSV file (total spent and by category).",
+            "description": "Summarizes transactions from a CSV file (total spent and visual bar chart of categories).",
             "parameters": {
                 "type": "object",
                 "properties": {"path": {"type": "string", "description": "Path to the CSV file to summarize"}}
@@ -171,8 +180,16 @@ TOOL_MAP = {
     "check_budget_overrun": fintech.check_budget_overrun
 }
 
-SYSTEM_PROMPT = """You are an Intelligent Windows Automation Agent with FinTech expertise.
+def get_dynamic_system_prompt():
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    cwd = os.getcwd()
+    return f"""You are an Intricate and Intelligent Windows Automation Agent with advanced FinTech expertise.
 You can help users control their Windows OS, retrieve system information, manage files, run safe commands, and perform personal finance tasks like tracking budgets and analyzing CSV transactions.
+
+Current System Context:
+- Time: {now}
+- Working Directory: {cwd}
+- OS: Windows
 
 You have access to a variety of tools. Use them to answer the user's request. 
 If a tool requires a parameter, provide it. If you need multiple steps, the system will return the tool output to you so you can reason about the next step.
@@ -181,7 +198,9 @@ Security Guidelines:
 - Only execute safe commands. Potentially destructive commands will be blocked by the security layer.
 - Some actions will require user approval before execution.
 
-Be concise, helpful, and professional."""
+Output formatting:
+- Use markdown aggressively to format your final answers (tables, bold text, lists).
+- Be analytical, concise, helpful, and highly professional."""
 
 def execute_tool_call(tool_call) -> str:
     """Executes a single tool call with security checks."""
@@ -211,7 +230,13 @@ def execute_tool_call(tool_call) -> str:
 
     # 3. User Approval check
     if security.requires_approval(tool_name):
-        if not security.ask_for_approval(tool_name, args):
+        console.print(Panel(f"[yellow]The agent wants to execute a potentially risky action.[/yellow]\n\n[cyan]Tool:[/cyan] {tool_name}\n[cyan]Arguments:[/cyan] {args}", title="⚠️ SECURITY ALERT", border_style="yellow"))
+        
+        response = Prompt.ask("[yellow]Do you approve this action?[/yellow]", choices=["y", "n"], default="n")
+        if response == 'y':
+            security.log_action("USER_APPROVAL", f"User approved tool {tool_name} with args {args}", "INFO")
+        else:
+            security.log_action("USER_DENIAL", f"User denied tool {tool_name} with args {args}", "WARNING")
             return f"Error: User denied permission to execute {tool_name}."
 
     # Execute the tool
@@ -225,24 +250,29 @@ def execute_tool_call(tool_call) -> str:
         security.log_action("ERROR", f"Tool {tool_name} failed: {str(e)}", "ERROR")
         return f"Tool Execution Error: {str(e)}"
 
-
 def chat_loop():
-    print(f"{Fore.CYAN}{'='*60}{Style.RESET_ALL}")
-    print(f"{Fore.GREEN} Intelligent Windows Automation Agent - FinTech Edition {Style.RESET_ALL}")
-    print(f"{Fore.CYAN}{'='*60}{Style.RESET_ALL}")
-    print("Type 'exit' or 'quit' to close.")
+    console.clear()
+    
+    # Beautiful Startup Panel
+    welcome_text = Text.assemble(
+        ("Welcome to the ", "cyan"),
+        ("Intelligent Windows Automation Agent\n", "bold green"),
+        ("FinTech Edition v2.0\n\n", "magenta"),
+        ("Type ", "white"), ("'exit'", "bold red"), (" to close the application.", "white")
+    )
+    console.print(Panel(welcome_text, title="System Online", border_style="cyan"))
 
     conversation_history = [
-        {"role": "system", "content": SYSTEM_PROMPT}
+        {"role": "system", "content": get_dynamic_system_prompt()}
     ]
 
     while True:
         try:
-            user_input = input(f"\n{Fore.BLUE}You:{Style.RESET_ALL} ").strip()
-            if not user_input:
+            user_input = Prompt.ask("\n[bold blue]You[/bold blue]")
+            if not user_input.strip():
                 continue
             if user_input.lower() in ['exit', 'quit']:
-                print(f"{Fore.YELLOW}Goodbye!{Style.RESET_ALL}")
+                console.print("[bold yellow]Goodbye![/bold yellow]")
                 break
 
             conversation_history.append({"role": "user", "content": user_input})
@@ -250,23 +280,35 @@ def chat_loop():
             # ReAct Loop
             max_iterations = 10
             for i in range(max_iterations):
-                # Call LLM
-                response = client.chat.completions.create(
-                    model="llama3-70b-8192",  # Using a fast, highly capable model
-                    messages=conversation_history,
-                    tools=TOOL_SCHEMAS,
-                    tool_choice="auto",
-                    temperature=0.2
-                )
+                
+                with Progress(
+                    SpinnerColumn(),
+                    TextColumn("[progress.description]{task.description}"),
+                    transient=True,
+                ) as progress:
+                    progress.add_task(description="Agent is thinking...", total=None)
+                    
+                    # Call LLM
+                    response = client.chat.completions.create(
+                        model="llama-3.3-70b-versatile",  # Using groq's best model
+                        messages=conversation_history,
+                        tools=TOOL_SCHEMAS,
+                        tool_choice="auto",
+                        temperature=0.2
+                    )
                 
                 message = response.choices[0].message
-                conversation_history.append(message)
+                
+                # Exclude tool_calls attribute when dumping back to dictionary if it's none
+                msg_dict = {"role": message.role, "content": message.content}
+                if message.tool_calls:
+                    msg_dict["tool_calls"] = [{"id": t.id, "type": "function", "function": {"name": t.function.name, "arguments": t.function.arguments}} for t in message.tool_calls]
+                
+                conversation_history.append(msg_dict)
 
                 if message.tool_calls:
-                    print(f"{Fore.MAGENTA}Agent is reasoning and taking action...{Style.RESET_ALL}")
-                    
                     for tool_call in message.tool_calls:
-                        print(f"  {Fore.CYAN}→ Calling tool: {tool_call.function.name}{Style.RESET_ALL}")
+                        console.print(f"  [cyan]⚡ Executing Tool:[/cyan] [bold]{tool_call.function.name}[/bold]")
                         
                         tool_result = execute_tool_call(tool_call)
                         
@@ -281,16 +323,17 @@ def chat_loop():
                     # Continue the loop so the model can process the tool results
                 else:
                     # Final text answer
-                    print(f"\n{Fore.GREEN}Agent:{Style.RESET_ALL} {message.content}")
+                    console.print("\n[bold green]Agent:[/bold green]")
+                    console.print(Panel(Markdown(message.content or ""), border_style="green"))
                     break
             else:
-                print(f"{Fore.RED}Error: Maximum iterations (10) reached without a final answer.{Style.RESET_ALL}")
+                console.print("[bold red]Error: Maximum iterations (10) reached without a final answer.[/bold red]")
                 
         except KeyboardInterrupt:
-            print(f"\n{Fore.YELLOW}Goodbye!{Style.RESET_ALL}")
+            console.print("\n[bold yellow]Goodbye![/bold yellow]")
             break
         except Exception as e:
-            print(f"{Fore.RED}An error occurred: {str(e)}{Style.RESET_ALL}")
+            console.print(f"[bold red]An error occurred:[/bold red] {str(e)}")
 
 if __name__ == "__main__":
     security.log_action("STARTUP", "Agent application started.")
