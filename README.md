@@ -62,8 +62,54 @@ Start the agent loop:
 ## AI Assistance
 This project was developed with the assistance of DeepMind Antigravity, which generated the boilerplate structure, core Python logic, tool integrations, and README.
 
-## Architecture
-- **`agent.py`**: The central orchestrator running the CLI loop and interacting with the Groq API.
+## Architecture & Process Pipeline
+
+The intelligence agent operates via a self-correcting state machine (ReAct loop). The underlying processing pipeline follows the architecture flow below:
+
+```mermaid
+graph TD
+    User([User Request]) --> UI[Rich CLI Interface]
+    UI --> Agent[Agentic State Machine <br/> ReAct Loop]
+    
+    Agent --> LLM{Cognitive Router <br/> Llama 3.3 70B}
+    
+    LLM -- JSON Tool Call --> Parser[Tool Call Parser]
+    
+    Parser -- Valid JSON --> Security{Security & Alignment Filter}
+    Parser -- Invalid JSON --> SelfCorrect[Self-Correction / Rewriter]
+    SelfCorrect -- Re-Query --> Agent
+    
+    Security -- Passes Policy --> ToolExecution[Tool Execution Layer]
+    Security -- Risky Action --> Approval{User Approval Required}
+    Approval -- Approved --> ToolExecution
+    Approval -- Denied --> ComplianceBlock((Compliance Block / Abort))
+    Security -- Forbidden Action --> ComplianceBlock
+    
+    ToolExecution --> T1[System Info & OS Management]
+    ToolExecution --> T2[File System Operations]
+    ToolExecution --> T3[FinTech Analytics Engine]
+    
+    T1 -.-> Observer
+    T2 -.-> Observer
+    T3 -.-> Observer
+    
+    Observer[Result Observer] -- Context Validated --> Agent
+    
+    LLM -- Final Text Response --> FinalOutput((Validated Assistant Response))
+    
+    classDef blue fill:#2563eb,stroke:#1e40af,stroke-width:2px,color:#fff
+    classDef green fill:#16a34a,stroke:#166534,stroke-width:2px,color:#fff
+    classDef red fill:#dc2626,stroke:#991b1b,stroke-width:2px,color:#fff
+    classDef diamond fill:#1f2937,stroke:#374151,stroke-width:2px,color:#fff
+    
+    class User blue
+    class FinalOutput green
+    class ComplianceBlock red
+    class LLM,Security,Approval diamond
+```
+
+### Core Components
+- **`agent.py`**: The central orchestrator running the Rich CLI loop and interacting with the Groq API.
 - **`tools.py`**: OS-level tools like process management and system info.
-- **`fintech.py`**: Business logic for the Personal Finance scenario.
-- **`security.py`**: Security guardrails and logging.
+- **`fintech.py`**: Business logic and text-based analytics for the Personal Finance scenario.
+- **`security.py`**: Security guardrails, validation routing, and audit logging.
