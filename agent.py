@@ -290,25 +290,51 @@ def chat_loop():
                 ) as progress:
                     progress.add_task(description="Agent is thinking...", total=None)
                     
-                    # Call LLM with Fault Tolerance (Retry Mechanism)
+                    # Call LLM with Fault Tolerance and Model Fallback
                     max_retries = 3
-                    for attempt in range(max_retries):
-                        try:
-                            if attempt > 0:
-                                progress.update(progress.task_ids[0], description=f"Retrying connection... (Attempt {attempt+1}/{max_retries})")
+                    models_to_try = [
+                        "llama-3.3-70b-versatile",
+                        "llama3-70b-8192",
+                        "mixtral-8x7b-32768",
+                        "llama3-8b-8192",
+                        "gemma2-9b-it"
+                    ]
+                    
+                    response = None
+                    last_error = None
+                    
+                    for current_model in models_to_try:
+                        success = False
+                        for attempt in range(max_retries):
+                            try:
+                                if attempt > 0:
+                                    progress.update(progress.task_ids[0], description=f"Retrying connection... (Attempt {attempt+1}/{max_retries}) using {current_model}")
+                                
+                                response = client.chat.completions.create(
+                                    model=current_model,
+                                    messages=conversation_history,
+                                    tools=TOOL_SCHEMAS,
+                                    tool_choice="auto",
+                                    temperature=0.2
+                                )
+                                success = True
+                                break # Success, exit retry loop
+                            except Exception as e:
+                                last_error = e
+                                error_msg = str(e)
+                                if "429" in error_msg or "Rate limit" in error_msg:
+                                    console.print(f"  [yellow]Rate limit hit on {current_model}. Switching to fallback model...[/yellow]")
+                                    break # Break retry loop, try next model immediately
+                                    
+                                if attempt == max_retries - 1:
+                                    break # Exhausted retries for this model, try next model
+                                time.sleep(2) # Wait before retrying
+                        
+                        if success:
+                            break
                             
-                            response = client.chat.completions.create(
-                                model="llama-3.3-70b-versatile",
-                                messages=conversation_history,
-                                tools=TOOL_SCHEMAS,
-                                tool_choice="auto",
-                                temperature=0.2
-                            )
-                            break # Success, exit retry loop
-                        except Exception as e:
-                            if attempt == max_retries - 1:
-                                raise Exception(f"Failed to communicate with LLM after {max_retries} attempts. Error: {str(e)}")
-                            time.sleep(2) # Wait before retrying
+                    if not response:
+                        raise Exception(f"All fallback models failed. Last error: {str(last_error)}")
                 
                 message = response.choices[0].message
                 
