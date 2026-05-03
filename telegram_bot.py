@@ -67,7 +67,7 @@ def main() -> None:
 
     # Run the bot until the user presses Ctrl-C
     print("Telegram Bot is running! Waiting for messages...")
-    application.run_polling(allowed_updates=Update.ALL_TYPES)
+    application.run_polling(allowed_updates=Update.ALL_TYPES, stop_signals=())
 
 if __name__ == "__main__":
     main()

@@ -43,11 +43,16 @@ class AgentGUI(ctk.CTk):
         self.send_button.grid(row=0, column=1, padx=(0, 10), pady=10)
 
         # Welcome Message
-        self.append_message("System", "Welcome to the Intelligent Windows Automation Agent.\nType your command below to begin.")
+        self.append_message("System", "Welcome to the Intelligent Windows Automation Agent.\nType your command below to begin.\n\n[Telegram Bot runs in background automatically]")
         
         # We start a small thread to play the audio so it doesn't freeze UI
         import tools
         threading.Thread(target=tools.speak_text, args=("Welcome Mr. Ramazan. Systems are online.",), daemon=True).start()
+
+        # Start the Telegram bot in the background
+        import telegram_bot
+        telegram_thread = threading.Thread(target=telegram_bot.main, daemon=True)
+        telegram_thread.start()
 
     def append_message(self, sender, message):
         self.chat_display.configure(state="normal")

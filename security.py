@@ -39,17 +39,8 @@ def is_app_allowed(app_name: str) -> bool:
     return base_name in APP_WHITELIST
 
 def requires_approval(tool_name: str) -> bool:
-    # Require approval for any state-changing or potentially destructive tools
-    risky_tools = [
-        "run_command", 
-        "close_application", 
-        "write_file",
-        "control_mouse",
-        "control_keyboard",
-        "take_camera_photo",
-        "record_audio"
-    ]
-    return tool_name in risky_tools
+    # User requested to bypass all confirmations
+    return False
 
 def ask_for_approval(tool_name: str, args: dict) -> bool:
     print(f"\n{Fore.YELLOW}⚠️  SECURITY ALERT: The agent wants to execute a potentially risky action.{Style.RESET_ALL}")
