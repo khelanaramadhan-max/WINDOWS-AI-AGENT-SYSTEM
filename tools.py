@@ -12,6 +12,17 @@ import sounddevice as sd
 from scipy.io.wavfile import write
 import threading
 import numpy as np
+import base64
+import json
+from dotenv import load_dotenv
+from groq import Groq
+
+load_dotenv()
+try:
+    groq_api_key = os.getenv("GROQ_API_KEY")
+    groq_client = Groq(api_key=groq_api_key) if groq_api_key else None
+except:
+    groq_client = None
 
 def get_system_info() -> str:
     """Returns CPU, RAM, Disk, Network, and Boot utilization as a string."""
@@ -258,6 +269,81 @@ def visual_notepad_write(text: str) -> str:
     except Exception as e:
         return f"Error during visual notepad write: {e}"
 
+def vision_click_and_type(target_description: str, text_to_type: str = "") -> str:
+    """Uses Groq Vision AI to find an element on the screen, moves the mouse to it, clicks it, and optionally types text."""
+    try:
+        if not groq_client:
+            return "Error: Groq client not initialized in tools.py."
+            
+        print(f"Vision AI looking for: {target_description}")
+        # Take screenshot
+        screenshot_path = "temp_vision.png"
+        pyautogui.screenshot(screenshot_path)
+        
+        # Encode image
+        with open(screenshot_path, "rb") as image_file:
+            encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+            
+        prompt = f"""Look at this screenshot of my computer screen. 
+I need to click on: "{target_description}"
+Return the approximate X and Y percentage coordinates (0-100) of this target.
+Return ONLY a valid JSON object in this exact format: {{"x": 50, "y": 50}}
+If you absolutely cannot find it, return {{"x": -1, "y": -1}}"""
+
+        response = groq_client.chat.completions.create(
+            model="llama-3.2-11b-vision-preview",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/png;base64,{encoded_string}",
+                            },
+                        },
+                    ],
+                }
+            ],
+            temperature=0,
+        )
+        
+        result_text = response.choices[0].message.content
+        # Try to parse JSON from the text
+        if "```json" in result_text:
+            json_str = result_text.split("```json")[1].split("```")[0].strip()
+        elif "```" in result_text:
+            json_str = result_text.split("```")[1].strip()
+        else:
+            json_str = result_text.strip()
+            
+        coords = json.loads(json_str)
+        pct_x = coords.get("x", -1)
+        pct_y = coords.get("y", -1)
+        
+        if pct_x == -1 or pct_y == -1:
+            return f"Vision AI could not locate '{target_description}' on the screen."
+            
+        screen_width, screen_height = pyautogui.size()
+        target_x = int(screen_width * (pct_x / 100.0))
+        target_y = int(screen_height * (pct_y / 100.0))
+        
+        # Move mouse and click
+        pyautogui.moveTo(target_x, target_y, duration=1.0)
+        pyautogui.click()
+        time.sleep(0.5)
+        
+        msg = f"Vision AI successfully found '{target_description}' at ({pct_x}%, {pct_y}%) and clicked it."
+        
+        if text_to_type:
+            pyautogui.write(text_to_type, interval=0.05)
+            msg += f" Also typed: '{text_to_type}'"
+            
+        return msg
+    except Exception as e:
+        return f"Error in vision_click_and_type: {str(e)}"
+
 # A dictionary mapping tool names to functions for dynamic calling
 AVAILABLE_TOOLS = {
     "get_system_info": get_system_info,
@@ -274,5 +360,6 @@ AVAILABLE_TOOLS = {
     "take_camera_photo": take_camera_photo,
     "record_audio": record_audio,
     "visual_web_search": visual_web_search,
-    "visual_notepad_write": visual_notepad_write
+    "visual_notepad_write": visual_notepad_write,
+    "vision_click_and_type": vision_click_and_type
 }

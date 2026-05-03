@@ -241,6 +241,21 @@ TOOL_SCHEMAS = [
             },
             "required": ["text"]
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "vision_click_and_type",
+            "description": "Uses Groq Vision AI to find an element on the screen, moves the mouse to it, clicks it, and optionally types text. Use this for limitless web automation like 'click the Post button on Twitter'.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "target_description": {"type": "string", "description": "Description of the element to click (e.g. 'Post button', 'Search bar')"},
+                    "text_to_type": {"type": "string", "description": "Optional text to type after clicking"}
+                }
+            },
+            "required": ["target_description"]
+        }
     }
 ]
 
@@ -263,7 +278,8 @@ TOOL_MAP = {
     "take_camera_photo": tools.take_camera_photo,
     "record_audio": tools.record_audio,
     "visual_web_search": tools.visual_web_search,
-    "visual_notepad_write": tools.visual_notepad_write
+    "visual_notepad_write": tools.visual_notepad_write,
+    "vision_click_and_type": tools.vision_click_and_type
 }
 
 def get_dynamic_system_prompt():
@@ -278,7 +294,7 @@ Current System Context:
 - OS: Windows
 
 Use the available tools to satisfy the user's request. 
-CRITICAL INSTRUCTION: If the user asks you to "search the web", "open a site", or "write a note", use `visual_web_search` or `visual_notepad_write`. This visually demonstrates the typing and mouse movement to the user, rather than doing it invisibly in the background. If the user asks you to take over or show a sign of life, use `speak_text`, `take_camera_photo`, or similar.
+CRITICAL INSTRUCTION: If the user asks you to interact with a specific website or button (e.g. "Go to Twitter and post..."), open the browser first using `open_application` or `visual_web_search`, and then use `vision_click_and_type` to dynamically find buttons on the screen and click them. This is the primary method for limitless web automation. If the user asks for generic actions, use `visual_web_search` or `visual_notepad_write`.
 Output should be formatted beautifully with markdown."""
 
 class AgentCore:
