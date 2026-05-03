@@ -1,28 +1,30 @@
-# Intelligent Windows Automation Agent
+# Intelligent Windows Automation Agent - FinTech Edition
 
-This is a 3-week FinTech project assignment to build an Intelligent Windows Automation Agent. It leverages a Large Language Model (via Groq API) to control the Windows operating system through natural language, acting as a smart FinTech assistant.
+This project is a sophisticated Windows Automation Agent built for a university FinTech assignment. It leverages a Large Language Model (via Groq API) to control the Windows operating system through natural language. 
 
-## Features
+The agent has evolved from a basic CLI tool into a **fully integrated suite** featuring an elegant graphical user interface, Telegram remote control, hardware automation (mouse/keyboard), and text-to-speech capabilities.
 
-- **Natural Language OS Control**: Ask the agent to open applications, close them, manage files, or get system metrics.
+## 🌟 Key Features
+
+- **Integrated Interfaces**:
+  - **Elegant GUI**: A sleek, dark-themed CustomTkinter desktop application.
+  - **Telegram Bot**: Full remote control over your PC directly from your smartphone.
+- **Visual Hardware Automation**: 
+  - Watch the agent physically move your mouse and type on your keyboard to demonstrate actions (e.g., visually searching the web or typing notes).
+  - Can take photos using your webcam and record audio using your microphone.
+- **Voice Interactions**: Speaks to you using the Windows text-to-speech engine.
 - **FinTech Scenario (Personal Finance Agent)**: Monitor spending categories, generate CSV files, summarize transactions, and alert budget overruns.
-- **ReAct Loop**: Uses Reason-Act-Observe loops with LLM tool calling. Maximum 10 iterations to prevent infinite loops.
-- **Robust Security Layer**: 
-  - Blocked destructive commands (`format`, `del /f`, etc.)
-  - Application Whitelist ensuring only safe programs are launched
-  - Requires user approval for potentially destructive actions (e.g., shell commands)
-  - Detailed audit log written to `logs/agent.log`
-- **Fault Tolerance & API Resiliency**:
-  - Automatically retries network/API failures with backoff wait times.
-  - LLM self-correction loop catches invalid JSON tool arguments and instructs the model to retry automatically.
+- **ReAct Intelligence Loop**: Uses Reason-Act-Observe loops with LLM tool calling, with fallback fault tolerance to handle rate limits and decommissioned models.
 
-## Prerequisites
+## ⚙️ Prerequisites
 
 - Python 3.10+
 - Git
 - Windows 10 / 11
+- A Telegram account (for bot remote control)
+- A Groq API Key (Free tier)
 
-## Setup Instructions
+## 🚀 Setup Instructions
 
 1. **Clone the repository:**
    ```powershell
@@ -39,61 +41,64 @@ This is a 3-week FinTech project assignment to build an Intelligent Windows Auto
 
 3. **Configure Environment Variables:**
    - Rename `.env.example` to `.env`.
-   - Update the `.env` file with your Groq API Key:
-     ```
+   - Update the `.env` file with your **Groq API Key** and your **Telegram Bot Token**:
+     ```env
      GROQ_API_KEY=your_groq_api_key_here
+     TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
      ```
+   *(To get a Telegram token, message `@BotFather` on Telegram and use `/newbot`)*
 
-## Usage
+## 💻 Usage
 
-Start the agent loop:
+Start the integrated agent system:
 ```powershell
-.\venv\Scripts\python agent.py
+.\Start_Agent.bat
 ```
+This single click will:
+1. Open the **Elegant GUI** window on your desktop.
+2. Initialize the Voice Module to greet you.
+3. Silently boot up the **Telegram Bot** in a background thread.
+
+You can now type commands directly into the GUI, or send a message to your Telegram bot from your phone—both will control your PC seamlessly!
 
 ### Example Commands:
-- "What is my current RAM and CPU usage?"
-- "List the top running processes."
-- "Create a sample transactions CSV."
-- "Check my spending from the transactions CSV and summarize it."
-- "Are there any budget overruns in the transactions CSV?"
-- "Open notepad"
+- *"Visually write a note in notepad that says hello world."* (Watch the mouse and keyboard move automatically!)
+- *"Open chrome and visually search for a bird picture."*
+- *"Take a picture using my webcam."*
+- *"Speak out loud and say 'I am alive'."*
+- *"Create a sample transactions CSV and summarize my budget."*
 
-## AI Assistance
-This project was developed with the assistance of DeepMind Antigravity, which generated the boilerplate structure, core Python logic, tool integrations, and README.
+## 🧠 Architecture & Process Pipeline
 
-## Architecture & Process Pipeline
-
-The intelligence agent operates via a self-correcting state machine (ReAct loop). The underlying processing pipeline follows the architecture flow below:
+The intelligence agent operates via a self-correcting state machine (ReAct loop). 
 
 ```mermaid
 graph TD
-    User([User Request]) --> UI[Rich CLI Interface]
-    UI --> Agent[Agentic State Machine <br/> ReAct Loop]
+    User([User Request]) --> GUI[CustomTkinter GUI]
+    UserPhone([User on Telegram]) --> Telegram[Telegram Bot Thread]
     
-    Agent --> LLM{Cognitive Router <br/> Llama 3.3 70B}
+    GUI --> Core[AgentCore Brain]
+    Telegram --> Core
+    
+    Core --> LLM{Groq Router <br/> Llama 3.1 / Gemma 2}
     
     LLM -- JSON Tool Call --> Parser[Tool Call Parser]
     
-    Parser -- Valid JSON --> Security{Security & Alignment Filter}
+    Parser -- Valid JSON --> Security{Security Bypass Layer}
     Parser -- Invalid JSON --> SelfCorrect[Self-Correction / Rewriter]
-    SelfCorrect -- Re-Query --> Agent
+    SelfCorrect -- Re-Query --> Core
     
-    Security -- Passes Policy --> ToolExecution[Tool Execution Layer]
-    Security -- Risky Action --> Approval{User Approval Required}
-    Approval -- Approved --> ToolExecution
-    Approval -- Denied --> ComplianceBlock((Compliance Block / Abort))
-    Security -- Forbidden Action --> ComplianceBlock
+    Security -- Auto-Approved --> ToolExecution[Tool Execution Layer]
     
-    ToolExecution --> T1[System Info & OS Management]
-    ToolExecution --> T2[File System Operations]
+    ToolExecution --> T1[Visual Hardware Automation<br>Mouse, Keyboard, Camera]
+    ToolExecution --> T2[System Info & File Ops]
     ToolExecution --> T3[FinTech Analytics Engine]
     
     T1 -.-> Observer
     T2 -.-> Observer
     T3 -.-> Observer
     
-    Observer[Result Observer] -- Context Validated --> Agent
+    Observer[Result Observer] -- Context Validated --> Core
     
     LLM -- Final Text Response --> FinalOutput((Validated Assistant Response))
     
@@ -102,14 +107,10 @@ graph TD
     classDef red fill:#dc2626,stroke:#991b1b,stroke-width:2px,color:#fff
     classDef diamond fill:#1f2937,stroke:#374151,stroke-width:2px,color:#fff
     
-    class User blue
+    class User,UserPhone blue
     class FinalOutput green
-    class ComplianceBlock red
-    class LLM,Security,Approval diamond
+    class LLM,Security diamond
 ```
 
-### Core Components
-- **`agent.py`**: The central orchestrator running the Rich CLI loop and interacting with the Groq API.
-- **`tools.py`**: OS-level tools like process management and system info.
-- **`fintech.py`**: Business logic and text-based analytics for the Personal Finance scenario.
-- **`security.py`**: Security guardrails, validation routing, and audit logging.
+## 🤖 AI Assistance
+This project was developed with the assistance of DeepMind Antigravity, which generated the boilerplate structure, the GUI design, hardware integration, asynchronous telegram threading, and this documentation.
