@@ -112,5 +112,3 @@ graph TD
     class LLM,Security diamond
 ```
 
-## 🤖 AI Assistance
-This project was developed with the assistance of DeepMind Antigravity, which generated the boilerplate structure, the GUI design, hardware integration, asynchronous telegram threading, and this documentation.
