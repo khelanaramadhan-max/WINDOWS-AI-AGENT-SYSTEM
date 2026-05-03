@@ -217,6 +217,30 @@ TOOL_SCHEMAS = [
                 }
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "visual_web_search",
+            "description": "Visually opens the browser, types the query, and searches. Use this to SHOW the user you are working.",
+            "parameters": {
+                "type": "object",
+                "properties": {"query": {"type": "string", "description": "The search query or URL"}}
+            },
+            "required": ["query"]
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "visual_notepad_write",
+            "description": "Visually opens Notepad and types text character by character to SHOW the user.",
+            "parameters": {
+                "type": "object",
+                "properties": {"text": {"type": "string", "description": "The text to type"}}
+            },
+            "required": ["text"]
+        }
     }
 ]
 
@@ -237,7 +261,9 @@ TOOL_MAP = {
     "control_mouse": tools.control_mouse,
     "control_keyboard": tools.control_keyboard,
     "take_camera_photo": tools.take_camera_photo,
-    "record_audio": tools.record_audio
+    "record_audio": tools.record_audio,
+    "visual_web_search": tools.visual_web_search,
+    "visual_notepad_write": tools.visual_notepad_write
 }
 
 def get_dynamic_system_prompt():
@@ -252,7 +278,7 @@ Current System Context:
 - OS: Windows
 
 Use the available tools to satisfy the user's request. 
-If the user asks you to take over or show a sign of life, use `speak_text`, `take_camera_photo`, or similar.
+CRITICAL INSTRUCTION: If the user asks you to "search the web", "open a site", or "write a note", use `visual_web_search` or `visual_notepad_write`. This visually demonstrates the typing and mouse movement to the user, rather than doing it invisibly in the background. If the user asks you to take over or show a sign of life, use `speak_text`, `take_camera_photo`, or similar.
 Output should be formatted beautifully with markdown."""
 
 class AgentCore:

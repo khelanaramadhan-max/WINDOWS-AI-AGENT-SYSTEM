@@ -216,6 +216,48 @@ def record_audio(filename: str = "audio.wav", duration: int = 5) -> str:
     except Exception as e:
         return f"Error recording audio: {str(e)}"
 
+def visual_web_search(query: str) -> str:
+    """Visually opens the browser, types the query, and searches to demonstrate GUI automation."""
+    try:
+        # Move mouse to center roughly to show movement
+        screen_width, screen_height = pyautogui.size()
+        pyautogui.moveTo(screen_width / 2, screen_height / 2, duration=1.0)
+        
+        pyautogui.press('win')
+        time.sleep(1)
+        pyautogui.write('chrome', interval=0.1)
+        time.sleep(1)
+        pyautogui.press('enter')
+        time.sleep(3) # Wait for browser to open
+        
+        # Type the query slowly
+        pyautogui.write(query, interval=0.1)
+        time.sleep(0.5)
+        pyautogui.press('enter')
+        return f"Visually searched for '{query}'"
+    except Exception as e:
+        return f"Error during visual web search: {e}"
+
+def visual_notepad_write(text: str) -> str:
+    """Visually opens Notepad and types the text character by character."""
+    try:
+        # Show mouse movement
+        screen_width, screen_height = pyautogui.size()
+        pyautogui.moveTo(screen_width / 2, screen_height / 2, duration=1.0)
+        
+        pyautogui.press('win')
+        time.sleep(1)
+        pyautogui.write('notepad', interval=0.1)
+        time.sleep(1)
+        pyautogui.press('enter')
+        time.sleep(2) # Wait for notepad to open
+        
+        # Type text slowly
+        pyautogui.write(text, interval=0.05)
+        return "Visually typed text into Notepad."
+    except Exception as e:
+        return f"Error during visual notepad write: {e}"
+
 # A dictionary mapping tool names to functions for dynamic calling
 AVAILABLE_TOOLS = {
     "get_system_info": get_system_info,
@@ -230,5 +272,7 @@ AVAILABLE_TOOLS = {
     "control_mouse": control_mouse,
     "control_keyboard": control_keyboard,
     "take_camera_photo": take_camera_photo,
-    "record_audio": record_audio
+    "record_audio": record_audio,
+    "visual_web_search": visual_web_search,
+    "visual_notepad_write": visual_notepad_write
 }
