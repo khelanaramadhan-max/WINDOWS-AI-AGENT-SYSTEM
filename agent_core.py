@@ -342,8 +342,8 @@ class AgentCore:
             max_retries = 3
             models_to_try = [
                 "llama-3.3-70b-versatile",
-                "llama3-70b-8192",
-                "mixtral-8x7b-32768"
+                "llama-3.1-8b-instant",
+                "gemma2-9b-it"
             ]
             
             response = None
@@ -364,7 +364,7 @@ class AgentCore:
                         break 
                     except Exception as e:
                         last_error = e
-                        if "429" in str(e) or "Rate limit" in str(e):
+                        if "429" in str(e) or "Rate limit" in str(e) or "400" in str(e):
                             break 
                         time.sleep(2)
                 if success:
