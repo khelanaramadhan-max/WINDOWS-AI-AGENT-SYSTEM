@@ -164,6 +164,75 @@ TOOL_SCHEMAS = [
                 "properties": {"path": {"type": "string", "description": "Path to the CSV file to check"}}
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "speak_text",
+            "description": "Synthesizes speech and plays it over the speakers.",
+            "parameters": {
+                "type": "object",
+                "properties": {"text": {"type": "string", "description": "The text to speak"}}
+            },
+            "required": ["text"]
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "control_mouse",
+            "description": "Controls the system mouse.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "action": {"type": "string", "description": "Action to perform ('move', 'click', 'right_click')"},
+                    "x": {"type": "integer", "description": "X coordinate for 'move' action"},
+                    "y": {"type": "integer", "description": "Y coordinate for 'move' action"}
+                }
+            },
+            "required": ["action"]
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "control_keyboard",
+            "description": "Controls the system keyboard.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "action": {"type": "string", "description": "Action to perform ('type', 'hotkey')"},
+                    "text": {"type": "string", "description": "Text to type for 'type' action"},
+                    "hotkey": {"type": "string", "description": "Hotkey to press for 'hotkey' action (e.g., 'ctrl+c')"}
+                }
+            },
+            "required": ["action"]
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "take_camera_photo",
+            "description": "Captures a photo from the system's default webcam.",
+            "parameters": {
+                "type": "object",
+                "properties": {"filename": {"type": "string", "description": "Filename to save the photo as (e.g., capture.jpg)"}}
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "record_audio",
+            "description": "Records audio from the system's default microphone.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "filename": {"type": "string", "description": "Filename to save the audio as (e.g., audio.wav)"},
+                    "duration": {"type": "integer", "description": "Duration in seconds to record"}
+                }
+            }
+        }
     }
 ]
 
@@ -179,14 +248,19 @@ TOOL_MAP = {
     "run_command": tools.run_command,
     "create_sample_csv": fintech.create_sample_csv,
     "summarize_transactions": fintech.summarize_transactions,
-    "check_budget_overrun": fintech.check_budget_overrun
+    "check_budget_overrun": fintech.check_budget_overrun,
+    "speak_text": tools.speak_text,
+    "control_mouse": tools.control_mouse,
+    "control_keyboard": tools.control_keyboard,
+    "take_camera_photo": tools.take_camera_photo,
+    "record_audio": tools.record_audio
 }
 
 def get_dynamic_system_prompt():
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     cwd = os.getcwd()
     return f"""You are an Intricate and Intelligent Windows Automation Agent with advanced FinTech expertise.
-You can help users control their Windows OS, retrieve system information, manage files, run safe commands, and perform personal finance tasks like tracking budgets and analyzing CSV transactions.
+You can help users control their Windows OS, retrieve system information, manage files, run safe commands, perform personal finance tasks, and interact with hardware (mouse, keyboard, camera, audio, speech).
 
 Current System Context:
 - Time: {now}
@@ -195,6 +269,7 @@ Current System Context:
 
 You have access to a variety of tools. Use them to answer the user's request. 
 If a tool requires a parameter, provide it. If you need multiple steps, the system will return the tool output to you so you can reason about the next step.
+If the user asks you to take over or show a sign of life, you can use the speak_text tool to talk, or take a picture, etc.
 
 Security Guidelines:
 - Only execute safe commands. Potentially destructive commands will be blocked by the security layer.
@@ -260,9 +335,16 @@ def chat_loop():
         ("Welcome to the ", "cyan"),
         ("Intelligent Windows Automation Agent\n", "bold green"),
         ("FinTech Edition v2.0\n\n", "magenta"),
+        ("Hardware Control: ", "cyan"), ("ONLINE\n", "bold green"),
         ("Type ", "white"), ("'exit'", "bold red"), (" to close the application.", "white")
     )
     console.print(Panel(welcome_text, title="System Online", border_style="cyan"))
+    
+    # Announce presence using text-to-speech
+    try:
+        tools.speak_text("Welcome Mr. Ramazan. Systems are online.")
+    except Exception as e:
+        console.print(f"[yellow]Voice module initialization warning: {e}[/yellow]")
 
     conversation_history = [
         {"role": "system", "content": get_dynamic_system_prompt()}
@@ -296,8 +378,7 @@ def chat_loop():
                         "llama-3.3-70b-versatile",
                         "llama3-70b-8192",
                         "mixtral-8x7b-32768",
-                        "llama3-8b-8192",
-                        "gemma2-9b-it"
+                        "llama3-8b-8192"
                     ]
                     
                     response = None

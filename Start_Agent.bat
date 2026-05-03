@@ -19,9 +19,28 @@ echo [INFO] Installing/Verifying dependencies...
 pip install -r requirements.txt --quiet
 
 echo.
+echo Please select the mode you want to run:
+echo [1] Terminal CLI (Original)
+echo [2] Elegant GUI (CustomTkinter)
+echo [3] Telegram Bot (Remote Control)
+echo.
+
+set /p mode="Enter your choice (1, 2, or 3): "
+
+echo.
 echo [INFO] Starting Agent...
 echo.
-python agent.py
+
+if "%mode%"=="1" (
+    python agent.py
+) else if "%mode%"=="2" (
+    python gui.py
+) else if "%mode%"=="3" (
+    python telegram_bot.py
+) else (
+    echo Invalid choice. Defaulting to GUI...
+    python gui.py
+)
 
 echo.
 pause

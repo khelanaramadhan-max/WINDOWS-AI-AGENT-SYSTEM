@@ -43,7 +43,11 @@ def requires_approval(tool_name: str) -> bool:
     risky_tools = [
         "run_command", 
         "close_application", 
-        "write_file"
+        "write_file",
+        "control_mouse",
+        "control_keyboard",
+        "take_camera_photo",
+        "record_audio"
     ]
     return tool_name in risky_tools
 

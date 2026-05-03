@@ -3,3 +3,10 @@ psutil==5.9.8
 python-dotenv==1.0.1
 colorama==0.4.6
 rich
+pyttsx3
+pyautogui
+opencv-python
+sounddevice
+scipy
+customtkinter
+python-telegram-bot

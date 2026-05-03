@@ -5,6 +5,13 @@ import time
 
 import socket
 from datetime import datetime
+import pyttsx3
+import pyautogui
+import cv2
+import sounddevice as sd
+from scipy.io.wavfile import write
+import threading
+import numpy as np
 
 def get_system_info() -> str:
     """Returns CPU, RAM, Disk, Network, and Boot utilization as a string."""
@@ -131,6 +138,84 @@ def run_command(cmd: str) -> str:
     except Exception as e:
         return f"Error executing command: {str(e)}"
 
+def speak_text(text: str) -> str:
+    """Synthesizes speech to speak the given text."""
+    def _speak():
+        try:
+            engine = pyttsx3.init()
+            engine.say(text)
+            engine.runAndWait()
+        except Exception as e:
+            print(f"Error speaking text: {e}")
+            
+    # Run in a separate thread so it doesn't block the agent loop
+    threading.Thread(target=_speak, daemon=True).start()
+    return f"Started speaking: '{text}'"
+
+def control_mouse(action: str, x: int = 0, y: int = 0) -> str:
+    """Controls the mouse. action can be 'move', 'click', 'right_click'."""
+    try:
+        if action == 'move':
+            pyautogui.moveTo(x, y, duration=0.5)
+            return f"Mouse moved to ({x}, {y})"
+        elif action == 'click':
+            pyautogui.click()
+            return "Mouse clicked."
+        elif action == 'right_click':
+            pyautogui.rightClick()
+            return "Mouse right-clicked."
+        else:
+            return f"Unknown mouse action: {action}"
+    except Exception as e:
+        return f"Error controlling mouse: {str(e)}"
+
+def control_keyboard(action: str, text: str = "", hotkey: str = "") -> str:
+    """Controls the keyboard. action can be 'type', 'hotkey'."""
+    try:
+        if action == 'type':
+            pyautogui.write(text, interval=0.05)
+            return f"Typed text: '{text}'"
+        elif action == 'hotkey':
+            keys = hotkey.split('+')
+            pyautogui.hotkey(*keys)
+            return f"Executed hotkey: {hotkey}"
+        else:
+            return f"Unknown keyboard action: {action}"
+    except Exception as e:
+        return f"Error controlling keyboard: {str(e)}"
+
+def take_camera_photo(filename: str = "capture.jpg") -> str:
+    """Captures a photo from the default webcam."""
+    try:
+        cap = cv2.VideoCapture(0)
+        if not cap.isOpened():
+            return "Error: Could not open webcam."
+            
+        # Give camera time to warm up
+        time.sleep(1)
+        ret, frame = cap.read()
+        if ret:
+            cv2.imwrite(filename, frame)
+            cap.release()
+            return f"Photo captured and saved to {filename}"
+        else:
+            cap.release()
+            return "Error: Could not read frame from webcam."
+    except Exception as e:
+        return f"Error capturing photo: {str(e)}"
+
+def record_audio(filename: str = "audio.wav", duration: int = 5) -> str:
+    """Records audio from the default microphone for a given duration (seconds)."""
+    try:
+        fs = 44100  # Sample rate
+        print(f"Recording {duration} seconds of audio...")
+        myrecording = sd.rec(int(duration * fs), samplerate=fs, channels=1)
+        sd.wait()  # Wait until recording is finished
+        write(filename, fs, np.array(myrecording, dtype=np.float32))
+        return f"Audio recorded and saved to {filename}"
+    except Exception as e:
+        return f"Error recording audio: {str(e)}"
+
 # A dictionary mapping tool names to functions for dynamic calling
 AVAILABLE_TOOLS = {
     "get_system_info": get_system_info,
@@ -140,5 +225,10 @@ AVAILABLE_TOOLS = {
     "create_file": create_file,
     "read_file": read_file,
     "write_file": write_file,
-    "run_command": run_command
+    "run_command": run_command,
+    "speak_text": speak_text,
+    "control_mouse": control_mouse,
+    "control_keyboard": control_keyboard,
+    "take_camera_photo": take_camera_photo,
+    "record_audio": record_audio
 }
