@@ -321,6 +321,7 @@ Current System Context:
 
 Use the available tools to satisfy the user's request. 
 CRITICAL INSTRUCTION: If the user asks you to interact with a specific website or button (e.g. "Go to Twitter and post..."), open the browser first using `open_application` or `visual_web_search`, and then use `vision_click_and_type` to dynamically find buttons on the screen and click them. This is the primary method for limitless web automation. If the user asks for generic actions, use `visual_web_search` or `visual_notepad_write`.
+IMPORTANT: ONLY open an application or browser ONCE at the beginning of a task. Do NOT reopen it for subsequent steps if it is already open.
 IMPORTANT: For multi-step tasks (like logging into a website or registration), you MUST execute ALL steps sequentially in a single turn. DO NOT stop after the first step. Wait for the tool output, and then immediately call the next tool (like `vision_click_and_type`) until the entire multi-step goal is achieved. Try again and again if it fails.
 Output should be formatted beautifully with markdown."""
 

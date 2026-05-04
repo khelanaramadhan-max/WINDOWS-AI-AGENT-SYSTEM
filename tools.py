@@ -293,7 +293,9 @@ def vision_click_and_type(target_description: str, text_to_type: str = "") -> st
             prompt = f"""Look at this screenshot of my computer screen. 
 I need to click on: "{target_description}"
 Return the approximate X and Y percentage coordinates (0-100) of this target.
-Return ONLY a valid JSON object in this exact format: {{"x": 50, "y": 50}}
+Return ONLY a valid JSON object. 
+Example format: {{"x": 12, "y": 84}}
+CRITICAL: Do NOT just output the example coordinates. You MUST calculate the actual X and Y location of the target.
 If you absolutely cannot find it, return {{"x": -1, "y": -1}}"""
 
             response = groq_client.chat.completions.create(
