@@ -386,8 +386,13 @@ def visual_matriks_search(ticker: str) -> str:
         return f"Error during visual Matriks search: {e}"
 
 def take_screenshot(filename: str = "screenshot.png") -> str:
-    """Takes a screenshot of the current screen and saves it to a file."""
+    """Takes a screenshot of the current screen and saves it to a file, defaulting to the Documents folder."""
     try:
+        if not os.path.isabs(filename):
+            documents_folder = os.path.join(os.path.expanduser("~"), "Documents")
+            os.makedirs(documents_folder, exist_ok=True)
+            filename = os.path.join(documents_folder, filename)
+            
         pyautogui.screenshot(filename)
         return f"Screenshot successfully saved to {filename}"
     except Exception as e:
