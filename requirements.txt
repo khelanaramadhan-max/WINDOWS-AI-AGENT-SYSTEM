@@ -12,3 +12,4 @@ customtkinter
 python-telegram-bot
 pandas
 yfinance
+Pillow
