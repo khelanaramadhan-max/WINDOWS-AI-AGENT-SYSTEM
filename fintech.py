@@ -84,3 +84,53 @@ def check_budget_overrun(path: str = "transactions.csv", limits: dict = None) ->
         return "\n".join(alerts)
     except Exception as e:
         return f"Error checking budget: {str(e)}"
+
+def get_live_stock_data(ticker: str) -> str:
+    """Gets live stock data for math/analysis, falling back to yfinance if Matriks export is missing."""
+    try:
+        import pandas as pd
+        import yfinance as yf
+    except ImportError:
+        return "Error: pandas or yfinance not installed. Please install them."
+
+    # Try to read from local Matriks DDE export if it exists
+    excel_path = "matriks_live.xlsx"
+    csv_path = "matriks_live.csv"
+    
+    if os.path.exists(csv_path):
+        try:
+            df = pd.read_csv(csv_path)
+            row = df[df['Ticker'] == ticker]
+            if not row.empty:
+                price = row.iloc[0]['Price']
+                return f"Matriks Live Data for {ticker}: ₺{price:.2f}"
+        except Exception:
+            pass
+            
+    if os.path.exists(excel_path):
+        try:
+            df = pd.read_excel(excel_path)
+            row = df[df['Ticker'] == ticker]
+            if not row.empty:
+                price = row.iloc[0]['Price']
+                return f"Matriks Live Data for {ticker}: ₺{price:.2f}"
+        except Exception:
+            pass
+
+    # Fallback to yfinance (Yahoo Finance) for presentation fallback
+    try:
+        # BIST stocks usually have .IS suffix (e.g. THYAO.IS)
+        yf_ticker = ticker.upper()
+        if not yf_ticker.endswith(".IS") and yf_ticker.isalpha():
+            yf_ticker = f"{yf_ticker}.IS"
+            
+        stock = yf.Ticker(yf_ticker)
+        data = stock.history(period="1d")
+        if data.empty:
+            return f"Error: Could not fetch data for {ticker}."
+            
+        current_price = data['Close'].iloc[-1]
+        return f"Live Data (Fallback API) for {ticker}: ₺{current_price:.2f}"
+    except Exception as e:
+        return f"Error fetching stock data: {str(e)}"
+

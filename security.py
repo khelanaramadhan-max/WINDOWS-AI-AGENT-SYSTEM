@@ -12,7 +12,7 @@ logging.basicConfig(
 )
 
 FORBIDDEN_COMMANDS = ['format', 'del /f', 'rd /s', 'shutdown /f', 'reg delete']
-APP_WHITELIST = ['notepad', 'chrome', 'code', 'excel', 'python', 'calc', 'cmd', 'powershell', 'explorer']
+APP_WHITELIST = ['notepad', 'chrome', 'code', 'excel', 'python', 'calc', 'cmd', 'powershell', 'explorer', 'matriks']
 
 def log_action(action: str, details: str, level: str = "INFO"):
     msg = f"Action: {action} | Details: {details}"

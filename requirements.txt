@@ -10,3 +10,5 @@ sounddevice
 scipy
 customtkinter
 python-telegram-bot
+pandas
+yfinance

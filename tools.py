@@ -4,6 +4,7 @@ import os
 import time
 
 import socket
+import random
 from datetime import datetime
 import pyttsx3
 import pyautogui
@@ -270,69 +271,84 @@ def visual_notepad_write(text: str) -> str:
         return f"Error during visual notepad write: {e}"
 
 def vision_click_and_type(target_description: str, text_to_type: str = "") -> str:
-    """Uses Groq Vision AI to find an element on the screen, moves the mouse to it, clicks it, and optionally types text."""
+    """Uses Groq Vision AI to find an element on the screen, moves the mouse to it realistically, clicks it, and optionally types text."""
     try:
         if not groq_client:
             return "Error: Groq client not initialized in tools.py."
             
         print(f"Vision AI looking for: {target_description}")
-        # Take screenshot
-        screenshot_path = "temp_vision.png"
-        pyautogui.screenshot(screenshot_path)
         
-        # Encode image
-        with open(screenshot_path, "rb") as image_file:
-            encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+        max_retries = 3
+        pct_x, pct_y = -1, -1
+        
+        for attempt in range(max_retries):
+            # Take screenshot
+            screenshot_path = "temp_vision.png"
+            pyautogui.screenshot(screenshot_path)
             
-        prompt = f"""Look at this screenshot of my computer screen. 
+            # Encode image
+            with open(screenshot_path, "rb") as image_file:
+                encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+                
+            prompt = f"""Look at this screenshot of my computer screen. 
 I need to click on: "{target_description}"
 Return the approximate X and Y percentage coordinates (0-100) of this target.
 Return ONLY a valid JSON object in this exact format: {{"x": 50, "y": 50}}
 If you absolutely cannot find it, return {{"x": -1, "y": -1}}"""
 
-        response = groq_client.chat.completions.create(
-            model="llama-3.2-11b-vision-preview",
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": prompt},
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/png;base64,{encoded_string}",
+            response = groq_client.chat.completions.create(
+                model="llama-3.2-11b-vision-preview",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt},
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:image/png;base64,{encoded_string}",
+                                },
                             },
-                        },
-                    ],
-                }
-            ],
-            temperature=0,
-        )
-        
-        result_text = response.choices[0].message.content
-        # Try to parse JSON from the text
-        if "```json" in result_text:
-            json_str = result_text.split("```json")[1].split("```")[0].strip()
-        elif "```" in result_text:
-            json_str = result_text.split("```")[1].strip()
-        else:
-            json_str = result_text.strip()
+                        ],
+                    }
+                ],
+                temperature=0,
+            )
             
-        coords = json.loads(json_str)
-        pct_x = coords.get("x", -1)
-        pct_y = coords.get("y", -1)
-        
+            result_text = response.choices[0].message.content
+            # Try to parse JSON from the text
+            if "```json" in result_text:
+                json_str = result_text.split("```json")[1].split("```")[0].strip()
+            elif "```" in result_text:
+                json_str = result_text.split("```")[1].strip()
+            else:
+                json_str = result_text.strip()
+                
+            try:
+                coords = json.loads(json_str)
+                pct_x = coords.get("x", -1)
+                pct_y = coords.get("y", -1)
+            except json.JSONDecodeError:
+                pct_x, pct_y = -1, -1
+                
+            if pct_x != -1 and pct_y != -1:
+                break
+                
+            print(f"Attempt {attempt + 1} failed to find target. Waiting 2 seconds before retry...")
+            time.sleep(2)
+            
         if pct_x == -1 or pct_y == -1:
-            return f"Vision AI could not locate '{target_description}' on the screen."
+            return f"Vision AI could not locate '{target_description}' on the screen after {max_retries} attempts."
             
         screen_width, screen_height = pyautogui.size()
         target_x = int(screen_width * (pct_x / 100.0))
         target_y = int(screen_height * (pct_y / 100.0))
         
-        # Move mouse and click
-        pyautogui.moveTo(target_x, target_y, duration=1.0)
+        # Move mouse realistically
+        duration = random.uniform(0.7, 1.5)
+        pyautogui.moveTo(target_x, target_y, duration=duration, tween=pyautogui.easeInOutQuad)
         pyautogui.click()
-        time.sleep(0.5)
+        time.sleep(random.uniform(0.2, 0.6))
         
         msg = f"Vision AI successfully found '{target_description}' at ({pct_x}%, {pct_y}%) and clicked it."
         
@@ -343,6 +359,29 @@ If you absolutely cannot find it, return {{"x": -1, "y": -1}}"""
         return msg
     except Exception as e:
         return f"Error in vision_click_and_type: {str(e)}"
+
+def visual_matriks_search(ticker: str) -> str:
+    """Visually searches for a stock ticker in the Matriks application."""
+    try:
+        # Show mouse movement
+        screen_width, screen_height = pyautogui.size()
+        pyautogui.moveTo(screen_width / 2, screen_height / 2, duration=1.0)
+        
+        # Open Matriks
+        pyautogui.press('win')
+        time.sleep(1)
+        pyautogui.write('matriks', interval=0.1)
+        time.sleep(1)
+        pyautogui.press('enter')
+        time.sleep(5) # Wait for Matriks to open/come to foreground
+        
+        # In Matriks Data Terminal, typing a ticker usually brings up the quote
+        pyautogui.write(ticker, interval=0.1)
+        time.sleep(1)
+        pyautogui.press('enter')
+        return f"Visually searched for ticker '{ticker}' in Matriks."
+    except Exception as e:
+        return f"Error during visual Matriks search: {e}"
 
 # A dictionary mapping tool names to functions for dynamic calling
 AVAILABLE_TOOLS = {
@@ -361,5 +400,7 @@ AVAILABLE_TOOLS = {
     "record_audio": record_audio,
     "visual_web_search": visual_web_search,
     "visual_notepad_write": visual_notepad_write,
-    "vision_click_and_type": vision_click_and_type
+    "vision_click_and_type": vision_click_and_type,
+    "visual_matriks_search": visual_matriks_search
 }
+

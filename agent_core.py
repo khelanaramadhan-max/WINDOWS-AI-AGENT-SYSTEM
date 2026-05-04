@@ -256,6 +256,30 @@ TOOL_SCHEMAS = [
             },
             "required": ["target_description"]
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "visual_matriks_search",
+            "description": "Visually searches for a stock ticker in the Matriks application to SHOW the user.",
+            "parameters": {
+                "type": "object",
+                "properties": {"ticker": {"type": "string", "description": "The stock ticker to search for (e.g., THYAO)"}}
+            },
+            "required": ["ticker"]
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_live_stock_data",
+            "description": "Gets live stock data for math/analysis.",
+            "parameters": {
+                "type": "object",
+                "properties": {"ticker": {"type": "string", "description": "The stock ticker (e.g., GARAN)"}}
+            },
+            "required": ["ticker"]
+        }
     }
 ]
 
@@ -272,6 +296,7 @@ TOOL_MAP = {
     "create_sample_csv": fintech.create_sample_csv,
     "summarize_transactions": fintech.summarize_transactions,
     "check_budget_overrun": fintech.check_budget_overrun,
+    "get_live_stock_data": fintech.get_live_stock_data,
     "speak_text": tools.speak_text,
     "control_mouse": tools.control_mouse,
     "control_keyboard": tools.control_keyboard,
@@ -279,7 +304,8 @@ TOOL_MAP = {
     "record_audio": tools.record_audio,
     "visual_web_search": tools.visual_web_search,
     "visual_notepad_write": tools.visual_notepad_write,
-    "vision_click_and_type": tools.vision_click_and_type
+    "vision_click_and_type": tools.vision_click_and_type,
+    "visual_matriks_search": tools.visual_matriks_search
 }
 
 def get_dynamic_system_prompt():
@@ -295,6 +321,7 @@ Current System Context:
 
 Use the available tools to satisfy the user's request. 
 CRITICAL INSTRUCTION: If the user asks you to interact with a specific website or button (e.g. "Go to Twitter and post..."), open the browser first using `open_application` or `visual_web_search`, and then use `vision_click_and_type` to dynamically find buttons on the screen and click them. This is the primary method for limitless web automation. If the user asks for generic actions, use `visual_web_search` or `visual_notepad_write`.
+IMPORTANT: For multi-step tasks (like logging into a website or registration), you MUST execute ALL steps sequentially in a single turn. DO NOT stop after the first step. Wait for the tool output, and then immediately call the next tool (like `vision_click_and_type`) until the entire multi-step goal is achieved. Try again and again if it fails.
 Output should be formatted beautifully with markdown."""
 
 class AgentCore:
