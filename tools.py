@@ -385,6 +385,14 @@ def visual_matriks_search(ticker: str) -> str:
     except Exception as e:
         return f"Error during visual Matriks search: {e}"
 
+def take_screenshot(filename: str = "screenshot.png") -> str:
+    """Takes a screenshot of the current screen and saves it to a file."""
+    try:
+        pyautogui.screenshot(filename)
+        return f"Screenshot successfully saved to {filename}"
+    except Exception as e:
+        return f"Error taking screenshot: {str(e)}"
+
 # A dictionary mapping tool names to functions for dynamic calling
 AVAILABLE_TOOLS = {
     "get_system_info": get_system_info,
@@ -403,6 +411,7 @@ AVAILABLE_TOOLS = {
     "visual_web_search": visual_web_search,
     "visual_notepad_write": visual_notepad_write,
     "vision_click_and_type": vision_click_and_type,
-    "visual_matriks_search": visual_matriks_search
+    "visual_matriks_search": visual_matriks_search,
+    "take_screenshot": take_screenshot
 }
 

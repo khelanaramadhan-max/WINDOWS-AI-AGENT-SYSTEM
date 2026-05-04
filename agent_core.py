@@ -280,6 +280,17 @@ TOOL_SCHEMAS = [
             },
             "required": ["ticker"]
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "take_screenshot",
+            "description": "Takes a screenshot of the current screen and saves it to a file.",
+            "parameters": {
+                "type": "object",
+                "properties": {"filename": {"type": "string", "description": "The name of the file to save (e.g. screenshot.png)"}}
+            }
+        }
     }
 ]
 
@@ -305,7 +316,8 @@ TOOL_MAP = {
     "visual_web_search": tools.visual_web_search,
     "visual_notepad_write": tools.visual_notepad_write,
     "vision_click_and_type": tools.vision_click_and_type,
-    "visual_matriks_search": tools.visual_matriks_search
+    "visual_matriks_search": tools.visual_matriks_search,
+    "take_screenshot": tools.take_screenshot
 }
 
 def get_dynamic_system_prompt():

@@ -72,8 +72,14 @@ class AgentGUI(ctk.CTk):
         return True
 
     def process_message_thread(self, user_input):
+        import tools
+        import re
+        
         self.update_status("Thinking...")
         self.send_button.configure(state="disabled")
+        
+        # Acknowledge the user
+        threading.Thread(target=tools.speak_text, args=("I am working on it.",), daemon=True).start()
         
         try:
             response = self.agent.process_message(
@@ -83,6 +89,11 @@ class AgentGUI(ctk.CTk):
                 status_callback=lambda msg: self.after(0, self.update_status, msg)
             )
             self.after(0, self.append_message, "Agent", response)
+            
+            # Clean markdown and speak the final response
+            clean_response = re.sub(r'[*#_`~]', '', response)
+            threading.Thread(target=tools.speak_text, args=(clean_response,), daemon=True).start()
+            
         except Exception as e:
             self.after(0, self.append_message, "System Error", str(e))
             
