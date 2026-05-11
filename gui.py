@@ -2,6 +2,8 @@ import customtkinter as ctk
 import threading
 from agent_core import AgentCore
 from rich.prompt import Prompt
+import tools
+import re
 
 class AgentGUI(ctk.CTk):
     def __init__(self):
@@ -21,7 +23,8 @@ class AgentGUI(ctk.CTk):
         self.agent = AgentCore()
 
         # Chat History Display
-        self.chat_display = ctk.CTkTextbox(self, state="disabled", wrap="word", font=("Consolas", 14))
+        self.chat_display = ctk.CTkTextbox(self, font=("Consolas", 14))
+        self.chat_display.configure(state="disabled", wrap="word")
         self.chat_display.grid(row=0, column=0, padx=20, pady=(20, 10), sticky="nsew")
 
         # Status Label
@@ -46,7 +49,6 @@ class AgentGUI(ctk.CTk):
         self.append_message("System", "Welcome to the Intelligent Windows Automation Agent.\nType your command below to begin.\n\n[Telegram Bot runs in background automatically]")
         
         # We start a small thread to play the audio so it doesn't freeze UI
-        import tools
         threading.Thread(target=tools.speak_text, args=("Welcome Mr. Ramazan. Systems are online.",), daemon=True).start()
 
         # Start the Telegram bot in the background
@@ -72,9 +74,7 @@ class AgentGUI(ctk.CTk):
         return True
 
     def process_message_thread(self, user_input):
-        import tools
-        import re
-        
+
         self.update_status("Thinking...")
         self.send_button.configure(state="disabled")
         

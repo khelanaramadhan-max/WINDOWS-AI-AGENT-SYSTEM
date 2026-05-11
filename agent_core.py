@@ -335,6 +335,23 @@ TOOL_SCHEMAS = [
             },
             "required": ["symbol"]
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "start_algo_trading",
+            "description": "Starts a background algorithmic trading bot that continuously monitors a stock and executes dummy trades based on SMA crossover logic.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "symbol": {"type": "string", "description": "The symbol to trade (e.g., EURUSD=X, AAPL)"},
+                    "interval_seconds": {"type": "integer", "description": "How often to check the price in seconds"},
+                    "sma_period": {"type": "integer", "description": "The Simple Moving Average period in minutes/bars"},
+                    "trade_units": {"type": "integer", "description": "Number of units to buy/sell"}
+                }
+            },
+            "required": ["symbol", "interval_seconds", "sma_period", "trade_units"]
+        }
     }
 ]
 
@@ -364,7 +381,8 @@ TOOL_MAP = {
     "take_screenshot": tools.take_screenshot,
     "analyze_screenshot": tools.analyze_screenshot,
     "mt5_buy_stock": fintech.mt5_buy_stock,
-    "mt5_sell_stock": fintech.mt5_sell_stock
+    "mt5_sell_stock": fintech.mt5_sell_stock,
+    "start_algo_trading": fintech.start_algo_trading
 }
 
 def get_dynamic_system_prompt():

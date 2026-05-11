@@ -63,7 +63,7 @@ def generate_signal(current_price, sma):
         print(f"{Fore.GREEN}[SIGNAL] Current price is below the {SMA_PERIOD}-Day SMA. Triggering 'BUY' signal!{Style.RESET_ALL}")
         return "BUY"
     else:
-        print(f"{Fore.RED}[SIGNAL] Current price is above or equal to {SMA_PERIOD}-Day SMA. No Buy signal.{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}[SIGNAL] Current price is above or equal to {SMA_PERIOD}-Day SMA. No Buy signal.{Style.RESET_ALL}")
         return "HOLD"
 
 def execute_trade(trading_client, symbol, side, qty=1):

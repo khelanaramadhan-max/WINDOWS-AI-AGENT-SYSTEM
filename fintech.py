@@ -181,3 +181,80 @@ def mt5_sell_stock(symbol: str, volume: float = 0.1) -> str:
         return f"Error simulating trade: {str(e)}"
         
     return f"Simulated Success: Market SELL order placed for {volume} lots of {symbol} at ${price} (Bypassed MT5 requirements)."
+
+def start_algo_trading(symbol: str, interval_seconds: int, sma_period: int, trade_units: int) -> str:
+    """Spawns a background terminal to monitor a stock, calculate SMA, and execute dummy trades based on crossovers."""
+    import subprocess
+    import os
+    
+    script_path = os.path.join(os.getcwd(), "temp_algo.py")
+    script_content = f'''import time
+import yfinance as yf
+import numpy as np
+from colorama import init, Fore, Style
+import datetime
+
+init(autoreset=True)
+
+SYMBOL = "{symbol}"
+INTERVAL = {interval_seconds}
+SMA_PERIOD = {sma_period}
+TRADE_UNITS = {trade_units}
+
+print(f"{{Fore.MAGENTA}}======================================================{{Style.RESET_ALL}}")
+print(f"{{Fore.MAGENTA}}🚀 ALGO TRADING BOT INITIALIZED{{Style.RESET_ALL}}")
+print(f"{{Fore.CYAN}}Symbol: {{SYMBOL}} | Interval: {{INTERVAL}}s | SMA: {{SMA_PERIOD}} | Units: {{TRADE_UNITS}}{{Style.RESET_ALL}}")
+print(f"{{Fore.MAGENTA}}======================================================{{Style.RESET_ALL}}\\n")
+
+position = 0 # 0 means flat, >0 means long
+
+while True:
+    now = datetime.datetime.now().strftime("%H:%M:%S")
+    print(f"\\n[{{now}}] {{Fore.YELLOW}}Fetching live data for {{SYMBOL}}...{{Style.RESET_ALL}}")
+    try:
+        # Fetch data to calculate SMA
+        data = yf.download(tickers=SYMBOL, period="5d", interval="1m", progress=False)
+        if data.empty:
+            print(f"{{Fore.RED}}Failed to fetch data for {{SYMBOL}}. Retrying next interval.{{Style.RESET_ALL}}")
+            time.sleep(INTERVAL)
+            continue
+            
+        latest_close = float(np.ravel(data['Close'].values)[-1])
+        
+        # Calculate SMA
+        if len(data) >= SMA_PERIOD:
+            sma_val = np.ravel(data['Close'].rolling(window=SMA_PERIOD).mean().values)[-1]
+            sma = float(sma_val)
+        else:
+            print(f"{{Fore.RED}}Not enough data points to calculate {{SMA_PERIOD}}-period SMA. Retrying...{{Style.RESET_ALL}}")
+            time.sleep(INTERVAL)
+            continue
+            
+        print(f"    Current Price: {{latest_close:.5f}}")
+        print(f"    {{SMA_PERIOD}}-Period SMA:   {{sma:.5f}}")
+        
+        # Trading Logic
+        if latest_close > sma and position == 0:
+            print(f"{{Fore.GREEN}}[SIGNAL] Price crossed ABOVE SMA. Executing BUY order for {{TRADE_UNITS}} units.{{Style.RESET_ALL}}")
+            position = TRADE_UNITS
+        elif latest_close < sma and position > 0:
+            print(f"{{Fore.RED}}[SIGNAL] Price crossed BELOW SMA. Executing SELL order for {{position}} units (closing position).{{Style.RESET_ALL}}")
+            position = 0
+        else:
+            print(f"{{Fore.CYAN}}[THINKING] No crossover detected or position unchanged. Holding.{{Style.RESET_ALL}}")
+            
+    except Exception as e:
+        print(f"{{Fore.RED}}Error occurred during execution: {{e}}{{Style.RESET_ALL}}")
+        
+    print(f"{{Fore.WHITE}}Waiting {{INTERVAL}} seconds for next check...{{Style.RESET_ALL}}")
+    time.sleep(INTERVAL)
+'''
+    try:
+        with open(script_path, "w", encoding="utf-8") as f:
+            f.write(script_content)
+            
+        # Launch the script in a new Command Prompt window
+        subprocess.Popen(f'start cmd /k "python {script_path}"', shell=True)
+        return f"Success! The Algo Trading Bot for {symbol} has been launched in a new terminal window."
+    except Exception as e:
+        return f"Error launching algo trading bot: {str(e)}"
