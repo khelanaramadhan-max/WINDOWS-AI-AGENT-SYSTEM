@@ -352,6 +352,23 @@ TOOL_SCHEMAS = [
             },
             "required": ["symbol", "interval_seconds", "sma_period", "trade_units"]
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "start_mt5_algo_trading",
+            "description": "Starts a background algorithmic trading bot that directly monitors MetaTrader 5, calculates SMA, executes REAL trades, and captures screenshots upon execution.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "symbol": {"type": "string", "description": "The MT5 symbol to trade (e.g., EURUSD)"},
+                    "interval_seconds": {"type": "integer", "description": "How often to check the price and update the loop in seconds"},
+                    "sma_period": {"type": "integer", "description": "The Simple Moving Average period in minutes/bars"},
+                    "trade_volume": {"type": "number", "description": "Number of lots to buy/sell (e.g., 0.01)"}
+                }
+            },
+            "required": ["symbol", "interval_seconds", "sma_period", "trade_volume"]
+        }
     }
 ]
 
@@ -382,7 +399,8 @@ TOOL_MAP = {
     "analyze_screenshot": tools.analyze_screenshot,
     "mt5_buy_stock": fintech.mt5_buy_stock,
     "mt5_sell_stock": fintech.mt5_sell_stock,
-    "start_algo_trading": fintech.start_algo_trading
+    "start_algo_trading": fintech.start_algo_trading,
+    "start_mt5_algo_trading": fintech.start_mt5_algo_trading
 }
 
 def get_dynamic_system_prompt():

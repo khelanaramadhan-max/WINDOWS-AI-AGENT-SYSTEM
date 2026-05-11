@@ -135,52 +135,90 @@ def get_live_stock_data(ticker: str) -> str:
         return f"Error fetching stock data: {str(e)}"
 
 def mt5_buy_stock(symbol: str, volume: float = 0.1) -> str:
-    """Mock implementation for MetaTrader 5 buy order (assignment simulation)."""
-    import random
-    from datetime import datetime
-    import csv
-    
-    # Simulate a price for the mock trade
-    price = round(random.uniform(50.0, 500.0), 2)
-    
-    # Log the simulated trade
-    trade_log = "mock_trades.csv"
-    file_exists = os.path.exists(trade_log)
-    
+    """Real implementation for MetaTrader 5 buy order."""
     try:
-        with open(trade_log, mode='a', newline='', encoding='utf-8') as f:
-            writer = csv.writer(f)
-            if not file_exists:
-                writer.writerow(["Timestamp", "Type", "Symbol", "Volume", "Price", "Status"])
-            writer.writerow([datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "BUY", symbol, volume, price, "MOCK_SUCCESS"])
-    except Exception as e:
-        return f"Error simulating trade: {str(e)}"
+        import MetaTrader5 as mt5
         
-    return f"Simulated Success: Market BUY order placed for {volume} lots of {symbol} at ${price} (Bypassed MT5 requirements)."
+        if not mt5.initialize():
+            return f"MT5 initialization failed: {mt5.last_error()}"
+            
+        symbol_info = mt5.symbol_info(symbol)
+        if symbol_info is None:
+            mt5.shutdown()
+            return f"Symbol {symbol} not found."
+            
+        if not symbol_info.visible:
+            if not mt5.symbol_select(symbol, True):
+                mt5.shutdown()
+                return f"Failed to select symbol {symbol}."
+                
+        price = mt5.symbol_info_tick(symbol).ask
+        
+        request = {
+            "action": mt5.TRADE_ACTION_DEAL,
+            "symbol": symbol,
+            "volume": float(volume),
+            "type": mt5.ORDER_TYPE_BUY,
+            "price": price,
+            "deviation": 20,
+            "magic": 234000,
+            "comment": "agent script open",
+            "type_time": mt5.ORDER_TIME_GTC,
+            "type_filling": mt5.ORDER_FILLING_IOC,
+        }
+        
+        result = mt5.order_send(request)
+        mt5.shutdown()
+        
+        if result.retcode != mt5.TRADE_RETCODE_DONE:
+            return f"Order failed, retcode={result.retcode}"
+            
+        return f"Success: Market BUY order placed for {volume} lots of {symbol} at {price}."
+    except Exception as e:
+        return f"Error executing MT5 trade: {e}"
 
 def mt5_sell_stock(symbol: str, volume: float = 0.1) -> str:
-    """Mock implementation for MetaTrader 5 sell order (assignment simulation)."""
-    import random
-    from datetime import datetime
-    import csv
-    
-    # Simulate a price for the mock trade
-    price = round(random.uniform(50.0, 500.0), 2)
-    
-    # Log the simulated trade
-    trade_log = "mock_trades.csv"
-    file_exists = os.path.exists(trade_log)
-    
+    """Real implementation for MetaTrader 5 sell order."""
     try:
-        with open(trade_log, mode='a', newline='', encoding='utf-8') as f:
-            writer = csv.writer(f)
-            if not file_exists:
-                writer.writerow(["Timestamp", "Type", "Symbol", "Volume", "Price", "Status"])
-            writer.writerow([datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "SELL", symbol, volume, price, "MOCK_SUCCESS"])
-    except Exception as e:
-        return f"Error simulating trade: {str(e)}"
+        import MetaTrader5 as mt5
         
-    return f"Simulated Success: Market SELL order placed for {volume} lots of {symbol} at ${price} (Bypassed MT5 requirements)."
+        if not mt5.initialize():
+            return f"MT5 initialization failed: {mt5.last_error()}"
+            
+        symbol_info = mt5.symbol_info(symbol)
+        if symbol_info is None:
+            mt5.shutdown()
+            return f"Symbol {symbol} not found."
+            
+        if not symbol_info.visible:
+            if not mt5.symbol_select(symbol, True):
+                mt5.shutdown()
+                return f"Failed to select symbol {symbol}."
+                
+        price = mt5.symbol_info_tick(symbol).bid
+        
+        request = {
+            "action": mt5.TRADE_ACTION_DEAL,
+            "symbol": symbol,
+            "volume": float(volume),
+            "type": mt5.ORDER_TYPE_SELL,
+            "price": price,
+            "deviation": 20,
+            "magic": 234000,
+            "comment": "agent script close",
+            "type_time": mt5.ORDER_TIME_GTC,
+            "type_filling": mt5.ORDER_FILLING_IOC,
+        }
+        
+        result = mt5.order_send(request)
+        mt5.shutdown()
+        
+        if result.retcode != mt5.TRADE_RETCODE_DONE:
+            return f"Order failed, retcode={result.retcode}"
+            
+        return f"Success: Market SELL order placed for {volume} lots of {symbol} at {price}."
+    except Exception as e:
+        return f"Error executing MT5 trade: {e}"
 
 def start_algo_trading(symbol: str, interval_seconds: int, sma_period: int, trade_units: int) -> str:
     """Spawns a background terminal to monitor a stock, calculate SMA, and execute dummy trades based on crossovers."""
@@ -254,7 +292,139 @@ while True:
             f.write(script_content)
             
         # Launch the script in a new Command Prompt window
-        subprocess.Popen(f'start cmd /k "python {script_path}"', shell=True)
+        subprocess.Popen(f'start "" cmd /k python "{script_path}"', shell=True)
         return f"Success! The Algo Trading Bot for {symbol} has been launched in a new terminal window."
     except Exception as e:
         return f"Error launching algo trading bot: {str(e)}"
+
+def start_mt5_algo_trading(symbol: str, interval_seconds: int, sma_period: int, trade_volume: float) -> str:
+    """Spawns a background terminal to monitor MT5, calculate SMA, execute REAL trades, and take screenshots."""
+    import subprocess
+    import os
+    
+    script_path = os.path.join(os.getcwd(), "mt5_bot.py")
+    script_content = f'''import time
+import MetaTrader5 as mt5
+from colorama import init, Fore, Style
+import datetime
+import os
+import pyautogui
+
+init(autoreset=True)
+
+SYMBOL = "{symbol}"
+INTERVAL = {interval_seconds}
+SMA_PERIOD = {sma_period}
+TRADE_VOLUME = {trade_volume}
+
+print(f"{{Fore.MAGENTA}}======================================================{{Style.RESET_ALL}}")
+print(f"{{Fore.MAGENTA}}🚀 REAL MT5 ALGO TRADING BOT INITIALIZED{{Style.RESET_ALL}}")
+print(f"{{Fore.CYAN}}Symbol: {{SYMBOL}} | Interval: {{INTERVAL}}s | SMA: {{SMA_PERIOD}} | Vol: {{TRADE_VOLUME}}{{Style.RESET_ALL}}")
+print(f"{{Fore.MAGENTA}}======================================================{{Style.RESET_ALL}}\\n")
+
+if not mt5.initialize():
+    print(f"{{Fore.RED}}MT5 initialization failed: {{mt5.last_error()}}{{Style.RESET_ALL}}")
+    time.sleep(10)
+    exit()
+    
+if not mt5.symbol_select(SYMBOL, True):
+    print(f"{{Fore.RED}}Failed to select {{SYMBOL}}{{Style.RESET_ALL}}")
+    mt5.shutdown()
+    time.sleep(10)
+    exit()
+
+# Setup data directory
+os.makedirs("trading_data", exist_ok=True)
+
+position = 0 # 0=flat, >0=long
+
+while True:
+    now = datetime.datetime.now().strftime("%H:%M:%S")
+    print(f"\\n[{{now}}] {{Fore.YELLOW}}Fetching MT5 live data for {{SYMBOL}}...{{Style.RESET_ALL}}")
+    try:
+        rates = mt5.copy_rates_from_pos(SYMBOL, mt5.TIMEFRAME_M1, 0, SMA_PERIOD + 1)
+        if rates is None or len(rates) < SMA_PERIOD:
+            print(f"{{Fore.RED}}Failed to get enough data for SMA.{{Style.RESET_ALL}}")
+            time.sleep(INTERVAL)
+            continue
+            
+        closes = [r[4] for r in rates] # Close price is at index 4
+        latest_close = closes[-1]
+        sma = sum(closes[:-1]) / SMA_PERIOD
+        
+        print(f"    Current Price: {{latest_close:.5f}}")
+        print(f"    {{SMA_PERIOD}}-Period SMA:   {{sma:.5f}}")
+        
+        trade_executed = False
+        
+        # Logic
+        if latest_close > sma and position == 0:
+            print(f"{{Fore.GREEN}}[SIGNAL] Price > SMA. Executing REAL BUY for {{TRADE_VOLUME}} lots.{{Style.RESET_ALL}}")
+            price = mt5.symbol_info_tick(SYMBOL).ask
+            request = {{
+                "action": mt5.TRADE_ACTION_DEAL,
+                "symbol": SYMBOL,
+                "volume": float(TRADE_VOLUME),
+                "type": mt5.ORDER_TYPE_BUY,
+                "price": price,
+                "deviation": 20,
+                "magic": 234000,
+                "comment": "algo buy",
+                "type_time": mt5.ORDER_TIME_GTC,
+                "type_filling": mt5.ORDER_FILLING_IOC,
+            }}
+            res = mt5.order_send(request)
+            if res.retcode == mt5.TRADE_RETCODE_DONE:
+                print(f"{{Fore.GREEN}}BUY SUCCESS! Ticket: {{res.order}}{{Style.RESET_ALL}}")
+                position = TRADE_VOLUME
+                trade_executed = True
+            else:
+                print(f"{{Fore.RED}}BUY FAILED: {{res.retcode}}{{Style.RESET_ALL}}")
+                
+        elif latest_close < sma and position > 0:
+            print(f"{{Fore.RED}}[SIGNAL] Price < SMA. Executing REAL SELL for {{position}} lots.{{Style.RESET_ALL}}")
+            price = mt5.symbol_info_tick(SYMBOL).bid
+            request = {{
+                "action": mt5.TRADE_ACTION_DEAL,
+                "symbol": SYMBOL,
+                "volume": float(position),
+                "type": mt5.ORDER_TYPE_SELL,
+                "price": price,
+                "deviation": 20,
+                "magic": 234000,
+                "comment": "algo sell",
+                "type_time": mt5.ORDER_TIME_GTC,
+                "type_filling": mt5.ORDER_FILLING_IOC,
+            }}
+            res = mt5.order_send(request)
+            if res.retcode == mt5.TRADE_RETCODE_DONE:
+                print(f"{{Fore.GREEN}}SELL SUCCESS! Ticket: {{res.order}}{{Style.RESET_ALL}}")
+                position = 0
+                trade_executed = True
+            else:
+                print(f"{{Fore.RED}}SELL FAILED: {{res.retcode}}{{Style.RESET_ALL}}")
+        else:
+            print(f"{{Fore.CYAN}}[THINKING] Holding.{{Style.RESET_ALL}}")
+            
+        if trade_executed:
+            time.sleep(1) # Let the MT5 terminal update visually
+            ss_path = f"trading_data/trade_data_{{int(time.time())}}.png"
+            pyautogui.screenshot(ss_path)
+            print(f"{{Fore.BLUE}}Screenshot saved to {{ss_path}}{{Style.RESET_ALL}}")
+            
+    except Exception as e:
+        print(f"{{Fore.RED}}Error: {{e}}{{Style.RESET_ALL}}")
+        
+    print(f"{{Fore.WHITE}}Waiting {{INTERVAL}} seconds...{{Style.RESET_ALL}}")
+    time.sleep(INTERVAL)
+'''
+    try:
+        with open(script_path, "w", encoding="utf-8") as f:
+            f.write(script_content)
+            
+        # Launch the script in a new Command Prompt window
+        subprocess.Popen(f'start "" cmd /k python "{script_path}"', shell=True)
+        return f"Success! The REAL MT5 Algo Trading Bot for {symbol} has been launched."
+    except Exception as e:
+        return f"Error launching MT5 algo trading bot: {str(e)}"
+
