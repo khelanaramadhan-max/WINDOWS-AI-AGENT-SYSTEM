@@ -134,3 +134,50 @@ def get_live_stock_data(ticker: str) -> str:
     except Exception as e:
         return f"Error fetching stock data: {str(e)}"
 
+def mt5_buy_stock(symbol: str, volume: float = 0.1) -> str:
+    """Mock implementation for MetaTrader 5 buy order (assignment simulation)."""
+    import random
+    from datetime import datetime
+    import csv
+    
+    # Simulate a price for the mock trade
+    price = round(random.uniform(50.0, 500.0), 2)
+    
+    # Log the simulated trade
+    trade_log = "mock_trades.csv"
+    file_exists = os.path.exists(trade_log)
+    
+    try:
+        with open(trade_log, mode='a', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            if not file_exists:
+                writer.writerow(["Timestamp", "Type", "Symbol", "Volume", "Price", "Status"])
+            writer.writerow([datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "BUY", symbol, volume, price, "MOCK_SUCCESS"])
+    except Exception as e:
+        return f"Error simulating trade: {str(e)}"
+        
+    return f"Simulated Success: Market BUY order placed for {volume} lots of {symbol} at ${price} (Bypassed MT5 requirements)."
+
+def mt5_sell_stock(symbol: str, volume: float = 0.1) -> str:
+    """Mock implementation for MetaTrader 5 sell order (assignment simulation)."""
+    import random
+    from datetime import datetime
+    import csv
+    
+    # Simulate a price for the mock trade
+    price = round(random.uniform(50.0, 500.0), 2)
+    
+    # Log the simulated trade
+    trade_log = "mock_trades.csv"
+    file_exists = os.path.exists(trade_log)
+    
+    try:
+        with open(trade_log, mode='a', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            if not file_exists:
+                writer.writerow(["Timestamp", "Type", "Symbol", "Volume", "Price", "Status"])
+            writer.writerow([datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "SELL", symbol, volume, price, "MOCK_SUCCESS"])
+    except Exception as e:
+        return f"Error simulating trade: {str(e)}"
+        
+    return f"Simulated Success: Market SELL order placed for {volume} lots of {symbol} at ${price} (Bypassed MT5 requirements)."

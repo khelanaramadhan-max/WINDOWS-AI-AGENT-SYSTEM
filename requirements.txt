@@ -13,3 +13,5 @@ python-telegram-bot
 pandas
 yfinance
 Pillow
+MetaTrader5
+alpaca-py

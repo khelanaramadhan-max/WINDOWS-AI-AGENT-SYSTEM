@@ -299,7 +299,7 @@ CRITICAL: Do NOT just output the example coordinates. You MUST calculate the act
 If you absolutely cannot find it, return {{"x": -1, "y": -1}}"""
 
             response = groq_client.chat.completions.create(
-                model="llama-3.2-11b-vision-preview",
+                model="llama-3.2-90b-vision-preview",
                 messages=[
                     {
                         "role": "user",
@@ -398,6 +398,45 @@ def take_screenshot(filename: str = "screenshot.png") -> str:
     except Exception as e:
         return f"Error taking screenshot: {str(e)}"
 
+def analyze_screenshot(filename: str = "screenshot.png", prompt: str = "Describe this image in detail.") -> str:
+    """Uses Groq Vision AI to analyze a screenshot."""
+    try:
+        if not groq_client:
+            return "Error: Groq client not initialized in tools.py."
+            
+        if not os.path.isabs(filename):
+            documents_folder = os.path.join(os.path.expanduser("~"), "Documents")
+            filename = os.path.join(documents_folder, filename)
+            
+        if not os.path.exists(filename):
+            return f"Error: Screenshot file '{filename}' not found."
+            
+        with open(filename, "rb") as image_file:
+            encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+            
+        response = groq_client.chat.completions.create(
+            model="llama-3.2-90b-vision-preview",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/png;base64,{encoded_string}",
+                            },
+                        },
+                    ],
+                }
+            ],
+            temperature=0,
+        )
+        
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"Error analyzing screenshot: {str(e)}"
+
 # A dictionary mapping tool names to functions for dynamic calling
 AVAILABLE_TOOLS = {
     "get_system_info": get_system_info,
@@ -417,6 +456,7 @@ AVAILABLE_TOOLS = {
     "visual_notepad_write": visual_notepad_write,
     "vision_click_and_type": vision_click_and_type,
     "visual_matriks_search": visual_matriks_search,
-    "take_screenshot": take_screenshot
+    "take_screenshot": take_screenshot,
+    "analyze_screenshot": analyze_screenshot
 }
 

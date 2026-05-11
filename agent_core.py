@@ -291,6 +291,50 @@ TOOL_SCHEMAS = [
                 "properties": {"filename": {"type": "string", "description": "The name of the file to save (e.g. screenshot.png)"}}
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "analyze_screenshot",
+            "description": "Uses Groq Vision AI to analyze a screenshot.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "filename": {"type": "string", "description": "The name of the file to analyze (e.g. screenshot.png)"},
+                    "prompt": {"type": "string", "description": "Prompt for the vision model"}
+                }
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "mt5_buy_stock",
+            "description": "Connects to MetaTrader 5 and issues a market buy order for a stock/symbol.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "symbol": {"type": "string", "description": "The symbol to buy"},
+                    "volume": {"type": "number", "description": "The volume/lots to buy"}
+                }
+            },
+            "required": ["symbol"]
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "mt5_sell_stock",
+            "description": "Connects to MetaTrader 5 and issues a market sell order for a stock/symbol.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "symbol": {"type": "string", "description": "The symbol to sell"},
+                    "volume": {"type": "number", "description": "The volume/lots to sell"}
+                }
+            },
+            "required": ["symbol"]
+        }
     }
 ]
 
@@ -317,7 +361,10 @@ TOOL_MAP = {
     "visual_notepad_write": tools.visual_notepad_write,
     "vision_click_and_type": tools.vision_click_and_type,
     "visual_matriks_search": tools.visual_matriks_search,
-    "take_screenshot": tools.take_screenshot
+    "take_screenshot": tools.take_screenshot,
+    "analyze_screenshot": tools.analyze_screenshot,
+    "mt5_buy_stock": fintech.mt5_buy_stock,
+    "mt5_sell_stock": fintech.mt5_sell_stock
 }
 
 def get_dynamic_system_prompt():
